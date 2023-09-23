@@ -15,4 +15,7 @@ public interface MessageDAO {
     boolean updateMessage(Message message);
 
     boolean deleteMessage(int id);
+
+    boolean doesUserExist(int userId);
+
 }

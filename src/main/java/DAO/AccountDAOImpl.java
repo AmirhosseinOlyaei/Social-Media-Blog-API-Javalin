@@ -2,11 +2,7 @@ package DAO;
 
 import Model.Account;
 import Util.ConnectionUtil;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,24 +22,26 @@ public class AccountDAOImpl implements AccountDAO {
     private Connection connection;
 
     public AccountDAOImpl() {
-        connection = ConnectionUtil.getConnection();
+        this.connection = ConnectionUtil.getConnection();
     }
 
     @Override
     public List<Account> getAllAccounts() {
         List<Account> accounts = new ArrayList<>();
-        try (Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(GET_ALL_ACCOUNTS)) {
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = connection.createStatement();
+            rs = stmt.executeQuery(GET_ALL_ACCOUNTS);
 
             while (rs.next()) {
-                Account account = new Account();
-                account.setAccount_id(rs.getInt(COLUMN_ACCOUNT_ID));
-                account.setUsername(rs.getString(COLUMN_USERNAME));
-                account.setPassword(rs.getString(COLUMN_PASSWORD));
+                Account account = mapResultSetToAccount(rs);
                 accounts.add(account);
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            closeResources(rs, stmt);
         }
         return accounts;
     }
@@ -58,29 +56,14 @@ public class AccountDAOImpl implements AccountDAO {
             pstmt = connection.prepareStatement(GET_ACCOUNT_BY_ID);
             pstmt.setInt(1, id);
             rs = pstmt.executeQuery();
+
             if (rs.next()) {
-                account = new Account();
-                account.setAccount_id(rs.getInt(COLUMN_ACCOUNT_ID));
-                account.setUsername(rs.getString(COLUMN_USERNAME));
-                account.setPassword(rs.getString(COLUMN_PASSWORD));
+                account = mapResultSetToAccount(rs);
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(rs, pstmt);
         }
         return account;
     }
@@ -95,29 +78,14 @@ public class AccountDAOImpl implements AccountDAO {
             pstmt = connection.prepareStatement(GET_ACCOUNT_BY_USERNAME);
             pstmt.setString(1, username);
             rs = pstmt.executeQuery();
+
             if (rs.next()) {
-                account = new Account();
-                account.setAccount_id(rs.getInt(COLUMN_ACCOUNT_ID));
-                account.setUsername(rs.getString(COLUMN_USERNAME));
-                account.setPassword(rs.getString(COLUMN_PASSWORD));
+                account = mapResultSetToAccount(rs);
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(rs, pstmt);
         }
         return account;
     }
@@ -129,19 +97,14 @@ public class AccountDAOImpl implements AccountDAO {
             pstmt = connection.prepareStatement(INSERT_ACCOUNT);
             pstmt.setString(1, account.getUsername());
             pstmt.setString(2, account.getPassword());
+
             int affectedRows = pstmt.executeUpdate();
             return affectedRows == 1;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(null, pstmt);
         }
     }
 
@@ -153,19 +116,14 @@ public class AccountDAOImpl implements AccountDAO {
             pstmt.setString(1, account.getUsername());
             pstmt.setString(2, account.getPassword());
             pstmt.setInt(3, account.getAccount_id());
+
             int affectedRows = pstmt.executeUpdate();
             return affectedRows == 1;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(null, pstmt);
         }
     }
 
@@ -175,19 +133,14 @@ public class AccountDAOImpl implements AccountDAO {
         try {
             pstmt = connection.prepareStatement(DELETE_ACCOUNT);
             pstmt.setInt(1, id);
+
             int affectedRows = pstmt.executeUpdate();
             return affectedRows == 1;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(null, pstmt);
         }
     }
 
@@ -198,27 +151,45 @@ public class AccountDAOImpl implements AccountDAO {
             pstmt = connection.prepareStatement(INSERT_ACCOUNT, Statement.RETURN_GENERATED_KEYS);
             pstmt.setString(1, account.getUsername());
             pstmt.setString(2, account.getPassword());
+
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 1) {
                 ResultSet generatedKeys = pstmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
-                    account.setAccount_id(generatedKeys.getInt(1)); // Assuming account_id is the first column in the
-                                                                    // table
+                    account.setAccount_id(generatedKeys.getInt(1));
                     return account;
                 }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            closeResources(null, pstmt);
         }
         return null; // Failed to save the account
     }
 
+    private Account mapResultSetToAccount(ResultSet rs) throws SQLException {
+        Account account = new Account();
+        account.setAccount_id(rs.getInt(COLUMN_ACCOUNT_ID));
+        account.setUsername(rs.getString(COLUMN_USERNAME));
+        account.setPassword(rs.getString(COLUMN_PASSWORD));
+        return account;
+    }
+
+    private void closeResources(ResultSet rs, Statement stmt) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        if (stmt != null) {
+            try {
+                stmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

@@ -8,7 +8,6 @@ public class MessageService {
 
     private final MessageDAO messageDAO;
 
-    // Constructor modified to accept a MessageDAO object
     public MessageService(MessageDAO messageDAO) {
         this.messageDAO = messageDAO;
     }
@@ -20,6 +19,9 @@ public class MessageService {
      * @return - True if the operation was successful, False otherwise.
      */
     public boolean addMessage(Message message) {
+
+        validateMessage(message);
+
         return messageDAO.insertMessage(message);
     }
 
@@ -41,6 +43,24 @@ public class MessageService {
      */
     public List<Message> getMessagesByUser(int postedBy) {
         return messageDAO.getMessagesByUser(postedBy);
+    }
+
+    /**
+     * Validates the message before adding.
+     * 
+     * @param message - The message to be validated.
+     */
+    private void validateMessage(Message message) {
+        // Check if the message text is not blank and under 255 characters
+        if (message.getMessage_text() == null || message.getMessage_text().trim().isEmpty()
+                || message.getMessage_text().length() > 255) {
+            throw new IllegalArgumentException("Invalid message text");
+        }
+
+        // Check if the user exists (assuming there's a method in MessageDAO to do that)
+        if (!messageDAO.doesUserExist(message.getPosted_by())) {
+            throw new IllegalArgumentException("User not found");
+        }
     }
 
     // ... You can add more methods as needed.
