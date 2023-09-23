@@ -7,6 +7,7 @@ import Model.Message;
 import Model.ResponseMessage;
 import Service.AccountService;
 import Service.MessageService;
+import Service.ValidationResult;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import org.slf4j.Logger;
@@ -63,28 +64,26 @@ public class SocialMediaController {
     private void postMessage(Context ctx) {
         try {
             Message message = ctx.bodyAsClass(Message.class);
-            validateMessage(ctx, message);
-            if (messageService.addMessage(message)) {
+            ValidationResult validationResult = messageService.addMessage(message);
+
+            if (validationResult.isValid()) {
                 ctx.json(message);
             } else {
-                sendErrorResponse(ctx, 500, "Failed to post message",
-                        String.format("Failed to post message for user with ID %d", message.getPosted_by()));
+                if (validationResult.getMessage().equals("Message text exceeds 254 characters")
+                        || validationResult.getMessage().equals("Message text cannot be blank")
+                        || validationResult.getMessage().equals("User not found in the database")) {
+                    ctx.status(400).json(""); // Return an empty response body with status code 400
+                } else {
+                    sendValidationErrorResponse(ctx, 400, validationResult.getMessage());
+                }
             }
         } catch (Exception e) {
             log.warn(e.getMessage());
         }
     }
 
-    private void validateMessage(Context ctx, Message message) {
-        String text = message.getMessage_text();
-        if (isNullOrBlank(text)) {
-            sendErrorResponse(ctx, 400, "Message text cannot be blank");
-        } else if (text.length() > 254) {
-            sendErrorResponse(ctx, 400, "Message text exceeds 254 characters");
-        } else if (accountService.getAccountById(message.getPosted_by()) == null) {
-            sendErrorResponse(ctx, 400, "User not found in the database",
-                    String.format("Attempt to post by non-existent user with ID %d", message.getPosted_by()));
-        }
+    private void sendValidationErrorResponse(Context ctx, int status, String message) {
+        ctx.status(status).json(mapResponse(message));
     }
 
     private void registerUser(Context ctx) {
@@ -124,15 +123,6 @@ public class SocialMediaController {
         }
     }
 
-    // private void loginUser(Context ctx) {
-    // Account inputAccount = ctx.bodyAsClass(Account.class);
-    // if (isNullOrBlank(inputAccount.getUsername()) ||
-    // isNullOrBlank(inputAccount.getPassword())) {
-    // sendErrorResponse(ctx, 400, "Invalid input");
-    // } else {
-    // authenticate(ctx, inputAccount);
-    // }
-    // }
     public void loginUser(Context ctx) {
         Account inputAccount = ctx.bodyAsClass(Account.class);
 
