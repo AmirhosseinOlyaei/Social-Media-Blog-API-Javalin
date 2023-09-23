@@ -1,8 +1,6 @@
 package Controller;
 
-import DAO.AccountDAO;
 import DAO.AccountDAOImpl;
-import DAO.MessageDAO;
 import DAO.MessageDAOImpl;
 import Model.Account;
 import Model.Message;
@@ -63,19 +61,23 @@ public class SocialMediaController {
     }
 
     private void postMessage(Context ctx) {
-        Message message = ctx.bodyAsClass(Message.class);
-        validateMessage(ctx, message);
-        if (messageService.addMessage(message)) {
-            ctx.json(message);
-        } else {
-            sendErrorResponse(ctx, 500, "Failed to post message",
-                    String.format("Failed to post message for user with ID %d", message.getPosted_by()));
+        try {
+            Message message = ctx.bodyAsClass(Message.class);
+            validateMessage(ctx, message);
+            if (messageService.addMessage(message)) {
+                ctx.json(message);
+            } else {
+                sendErrorResponse(ctx, 500, "Failed to post message",
+                        String.format("Failed to post message for user with ID %d", message.getPosted_by()));
+            }
+        } catch (Exception e) {
+            log.warn(e.getMessage());
         }
     }
 
     private void validateMessage(Context ctx, Message message) {
         String text = message.getMessage_text();
-        if (text == null || text.trim().isEmpty()) {
+        if (isNullOrBlank(text)) {
             sendErrorResponse(ctx, 400, "Message text cannot be blank");
         } else if (text.length() > 254) {
             sendErrorResponse(ctx, 400, "Message text exceeds 254 characters");
@@ -88,20 +90,19 @@ public class SocialMediaController {
     private void registerUser(Context ctx) {
         try {
             Account account = ctx.bodyAsClass(Account.class);
-            validateAccount(ctx, account);
+            validateAccount(ctx, account); // This will throw an exception if validation fails.
             if (accountService.checkIfUserExists(account.getUsername())) {
-                ctx.status(400).result(""); // Respond with 400 status and empty body.
+                ctx.status(400).result("");
+                return;
+            }
+            Account createdAccount = accountService.createAccount(account);
+            if (createdAccount != null) {
+                ctx.status(200).json(createdAccount);
             } else {
-                Account createdAccount = accountService.createAccount(account);
-                if (createdAccount != null) {
-                    ctx.status(200).json(createdAccount); // Respond with 200 and the created account.
-                } else {
-                    sendErrorResponse(ctx, 500, "Failed to register user",
-                            String.format("Failed to register user with username %s", account.getUsername()));
-                }
+                sendErrorResponse(ctx, 500, "Failed to register user",
+                        String.format("Failed to register user with username %s", account.getUsername()));
             }
         } catch (IllegalArgumentException e) {
-            // If the exception's message is meaningful, you can log it.
             log.warn(e.getMessage());
         }
     }
@@ -123,22 +124,42 @@ public class SocialMediaController {
         }
     }
 
-    private void loginUser(Context ctx) {
+    // private void loginUser(Context ctx) {
+    // Account inputAccount = ctx.bodyAsClass(Account.class);
+    // if (isNullOrBlank(inputAccount.getUsername()) ||
+    // isNullOrBlank(inputAccount.getPassword())) {
+    // sendErrorResponse(ctx, 400, "Invalid input");
+    // } else {
+    // authenticate(ctx, inputAccount);
+    // }
+    // }
+    public void loginUser(Context ctx) {
         Account inputAccount = ctx.bodyAsClass(Account.class);
+
         if (isNullOrBlank(inputAccount.getUsername()) || isNullOrBlank(inputAccount.getPassword())) {
             sendErrorResponse(ctx, 400, "Invalid input");
-        } else {
-            authenticate(ctx, inputAccount);
+            return;
         }
+
+        // Check if the password is valid.
+        Account existingAccount = accountService.getAccountByUsername(inputAccount.getUsername());
+        if (existingAccount == null || !existingAccount.getPassword().equals(inputAccount.getPassword())) {
+            // Return a 401 Unauthorized response.
+            ctx.status(401).json(mapResponse(""));
+            return;
+        }
+
+        // Authenticate the user.
+        authenticate(ctx, inputAccount);
     }
 
     private void authenticate(Context ctx, Account inputAccount) {
         Account existingAccount = accountService.getAccountByUsername(inputAccount.getUsername());
         if (existingAccount == null || !existingAccount.getPassword().equals(inputAccount.getPassword())) {
-            sendErrorResponse(ctx, 401, "Invalid username or password",
-                    String.format("Invalid login attempt for username %s", inputAccount.getUsername()));
+            // Modify the response to include an empty message
+            ctx.status(401).json(mapResponse(""));
         } else {
-            ctx.status(200).json(mapResponse("Login successful"));
+            ctx.status(200).json(existingAccount);
         }
     }
 
@@ -158,5 +179,4 @@ public class SocialMediaController {
     private boolean isNullOrBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
-
 }
