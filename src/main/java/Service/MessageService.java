@@ -2,6 +2,8 @@ package Service;
 
 import Model.Message;
 import DAO.MessageDAO;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageService {
@@ -62,6 +64,13 @@ public class MessageService {
     private boolean isNullOrBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+    // Define a method to delete a message by its ID
+    public boolean deleteMessageById(int messageId) {
+        return messageDAO.deleteMessageById(messageId);
+    }
+
+    // Other methods for message retrieval, addition, etc.
 
     // ... You can add more methods as needed.
 }

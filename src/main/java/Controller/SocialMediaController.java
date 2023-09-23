@@ -45,6 +45,26 @@ public class SocialMediaController {
         app.post("/messages", this::postMessage);
         app.post("/register", this::registerUser);
         app.post("/login", this::loginUser);
+        app.delete("/messages/{messageId}", this::deleteMessage);
+
+        // Add a new DELETE endpoint for deleting a message by ID
+        app.delete("/messages/{id}", ctx -> {
+            // Parse the message ID from the request parameter
+            int messageId = Integer.parseInt(ctx.pathParam("id"));
+
+            // Call the deleteMessageById method from your MessageService to delete the
+            // message by its ID
+            boolean deleted = messageService.deleteMessageById(messageId);
+
+            if (deleted) {
+                // Message deleted successfully, return a 200 response
+                ctx.status(200).result("Message deleted successfully");
+            } else {
+                // Failed to delete the message, return an error response (e.g., 404 Not Found)
+                ctx.status(404).result("Message not found");
+            }
+        });
+
     }
 
     private void getAllAccounts(Context ctx) {
@@ -169,4 +189,26 @@ public class SocialMediaController {
     private boolean isNullOrBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+    private void deleteMessage(Context ctx) {
+        try {
+            int messageId = Integer.parseInt(ctx.pathParam("messageId"));
+            boolean deleted = messageService.deleteMessageById(messageId);
+
+            if (deleted) {
+                // Respond with a JSON object indicating success
+                ctx.status(200).json(new ResponseMessage("Message deleted successfully"));
+            } else {
+                // Respond with a JSON object indicating failure
+                ctx.status(404).json(new ResponseMessage("Message not found"));
+            }
+        } catch (NumberFormatException e) {
+            // Handle the case where the message ID is not a valid integer
+            ctx.status(400).json(new ResponseMessage("Invalid message ID"));
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+            ctx.status(500).json(new ResponseMessage("Server error"));
+        }
+    }
+
 }

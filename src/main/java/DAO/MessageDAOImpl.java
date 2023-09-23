@@ -6,11 +6,17 @@ import Util.ConnectionUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MessageDAOImpl implements MessageDAO {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageDAOImpl.class);
 
     private static final String COLUMN_MESSAGE_ID = "message_id";
     private static final String COLUMN_POSTED_BY = "posted_by";
@@ -119,15 +125,47 @@ public class MessageDAOImpl implements MessageDAO {
 
     @Override
     public boolean deleteMessage(int id) {
-        try (PreparedStatement pstmt = connection.prepareStatement(DELETE_MESSAGE)) {
-            pstmt.setInt(1, id);
+        try (Connection connection = ConnectionUtil.getConnection()) {
+            // Create a PreparedStatement to delete a message by its ID
+            String sql = "DELETE FROM messages WHERE id = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                // Set the ID parameter
+                preparedStatement.setInt(1, id);
+
+                // Execute the delete statement
+                int rowsDeleted = preparedStatement.executeUpdate();
+
+                // If one or more rows were deleted, return true; otherwise, return false
+                return rowsDeleted > 0;
+            }
+        } catch (SQLException e) {
+            // Handle any SQL exceptions here, e.g., log the error
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deleteMessageById(int messageId) {
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = connection.prepareStatement(DELETE_MESSAGE);
+            pstmt.setInt(1, messageId);
             int affectedRows = pstmt.executeUpdate();
             return affectedRows == 1;
-
         } catch (Exception e) {
-            handleError(e);
+            log.error("Error while deleting message by ID: " + messageId, e);
+            return false; // Handle the error and return false in case of an exception.
+        } finally {
+            // Ensure that the PreparedStatement is closed in the finally block
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (Exception e) {
+                    log.error("Error while closing PreparedStatement", e);
+                }
+            }
         }
-        return false;
     }
 
     @Override
@@ -161,8 +199,7 @@ public class MessageDAOImpl implements MessageDAO {
     }
 
     private void handleError(Exception e) {
-        // In real-world applications, you would use logging frameworks like SLF4J,
-        // Logback, etc.
-        e.printStackTrace();
+        log.error("An error occurred in MessageDAOImpl", e);
     }
+
 }
