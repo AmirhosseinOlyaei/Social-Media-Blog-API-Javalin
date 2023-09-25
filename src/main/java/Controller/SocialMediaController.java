@@ -193,21 +193,21 @@ public class SocialMediaController {
     private void deleteMessage(Context ctx) {
         try {
             int messageId = Integer.parseInt(ctx.pathParam("messageId"));
-            boolean deleted = messageService.deleteMessageById(messageId);
+            Message message = messageService.getMessageById(messageId);
 
-            if (deleted) {
-                // Respond with a JSON object indicating success
-                ctx.status(200).json(new ResponseMessage("Message deleted successfully"));
+            if (message != null) {
+                messageService.deleteMessageById(messageId);
+                ctx.status(200).json(message);
             } else {
-                // Respond with a JSON object indicating failure
-                ctx.status(404).json(new ResponseMessage("Message not found"));
+                ctx.status(200).result(""); // No content for a message that didn't exist
             }
+
         } catch (NumberFormatException e) {
             // Handle the case where the message ID is not a valid integer
-            ctx.status(400).json(new ResponseMessage("Invalid message ID"));
+            ctx.status(400);
         } catch (Exception e) {
             log.warn(e.getMessage());
-            ctx.status(500).json(new ResponseMessage("Server error"));
+            ctx.status(500);
         }
     }
 
