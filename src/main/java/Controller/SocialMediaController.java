@@ -10,6 +10,9 @@ import Service.MessageService;
 import Service.ValidationResult;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +44,7 @@ public class SocialMediaController {
 
     private void registerEndpoints(Javalin app) {
         app.get("/accounts", this::getAllAccounts);
+        app.get("/accounts/{accountId}/messages", this::getAllMessagesForUser);
         app.get("/messages/{id}", this::getMessageById);
         app.post("/messages", this::postMessage);
         app.post("/register", this::registerUser);
@@ -69,6 +73,12 @@ public class SocialMediaController {
 
     private void getAllAccounts(Context ctx) {
         ctx.json(accountService.getAllAccounts());
+    }
+
+    private void getAllMessagesForUser(Context ctx) {
+        int accountId = Integer.parseInt(ctx.pathParam("accountId"));
+        List<Message> messages = messageService.getAllMessagesForUser(accountId);
+        ctx.json(messages);
     }
 
     private void getMessageById(Context ctx) {

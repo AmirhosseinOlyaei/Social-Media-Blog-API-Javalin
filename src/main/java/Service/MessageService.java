@@ -14,6 +14,10 @@ public class MessageService {
         this.messageDAO = messageDAO;
     }
 
+    public List<Message> getAllMessagesForUser(int accountId) {
+        return messageDAO.getMessagesByUser(accountId);
+    }
+
     /**
      * Retrieve a specific message by its ID.
      * 
