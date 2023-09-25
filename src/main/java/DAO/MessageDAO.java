@@ -12,9 +12,7 @@ public interface MessageDAO {
 
     boolean insertMessage(Message message);
 
-    boolean updateMessage(Message message);
-
-    boolean deleteMessage(int id);
+    boolean updateMessageText(int messageId, String newText);
 
     boolean deleteMessageById(int messageId);
 

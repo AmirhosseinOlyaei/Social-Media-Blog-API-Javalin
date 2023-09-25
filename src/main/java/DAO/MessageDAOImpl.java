@@ -27,7 +27,7 @@ public class MessageDAOImpl implements MessageDAO {
     private static final String GET_MESSAGE_BY_ID = "SELECT * FROM message WHERE message_id = ?";
     private static final String GET_MESSAGES_BY_USER = "SELECT * FROM message WHERE posted_by = ?";
     private static final String INSERT_MESSAGE = "INSERT INTO message(posted_by, message_text, time_posted_epoch) VALUES (?, ?, ?)";
-    private static final String UPDATE_MESSAGE = "UPDATE message SET posted_by = ?, message_text = ?, time_posted_epoch = ? WHERE message_id = ?";
+    private static final String UPDATE_MESSAGE_TEXT = "UPDATE message SET message_text = ? WHERE message_id = ?";
     private static final String DELETE_MESSAGE = "DELETE FROM message WHERE message_id = ?";
     private static final String CHECK_USER_EXISTENCE = "SELECT COUNT(*) FROM account WHERE account_id = ?";
 
@@ -110,40 +110,16 @@ public class MessageDAOImpl implements MessageDAO {
     }
 
     @Override
-    public boolean updateMessage(Message message) {
-        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_MESSAGE)) {
-            setPreparedStatementForMessage(pstmt, message);
-            pstmt.setInt(4, message.getMessage_id());
-
+    public boolean updateMessageText(int messageId, String newText) {
+        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_MESSAGE_TEXT)) {
+            pstmt.setString(1, newText);
+            pstmt.setInt(2, messageId);
             int affectedRows = pstmt.executeUpdate();
             return affectedRows == 1;
-
         } catch (Exception e) {
             handleError(e);
         }
         return false;
-    }
-
-    @Override
-    public boolean deleteMessage(int id) {
-        try (Connection connection = ConnectionUtil.getConnection()) {
-            // Create a PreparedStatement to delete a message by its ID
-            String sql = "DELETE FROM messages WHERE id = ?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                // Set the ID parameter
-                preparedStatement.setInt(1, id);
-
-                // Execute the delete statement
-                int rowsDeleted = preparedStatement.executeUpdate();
-
-                // If one or more rows were deleted, return true; otherwise, return false
-                return rowsDeleted > 0;
-            }
-        } catch (SQLException e) {
-            // Handle any SQL exceptions here, e.g., log the error
-            e.printStackTrace();
-            return false;
-        }
     }
 
     @Override

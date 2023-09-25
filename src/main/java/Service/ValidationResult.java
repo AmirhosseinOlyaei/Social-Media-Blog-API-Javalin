@@ -24,4 +24,8 @@ public class ValidationResult {
     public String getMessage() {
         return message;
     }
+
+    public static ValidationResult success(String string) {
+        return null;
+    }
 }

@@ -52,21 +52,30 @@ public class SocialMediaController {
         app.post("/login", this::loginUser);
         app.delete("/messages/{messageId}", this::deleteMessage);
 
-        // Add a new DELETE endpoint for deleting a message by ID
-        app.delete("/messages/{id}", ctx -> {
-            // Parse the message ID from the request parameter
+        app.patch("/messages/{id}", ctx -> {
+            // 1. Extract the message ID from the URL.
             int messageId = Integer.parseInt(ctx.pathParam("id"));
 
-            // Call the deleteMessageById method from your MessageService to delete the
-            // message by its ID
-            boolean deleted = messageService.deleteMessageById(messageId);
+            // 2. Extract the new message text from the request body.
+            String newMessageText = ctx.bodyAsClass(Message.class).getMessage_text();
 
-            if (deleted) {
-                // Message deleted successfully, return a 200 response
-                ctx.status(200).result("Message deleted successfully");
+            // 3. Call the updateMessageText method from the MessageService.
+            ValidationResult validationResult = messageService.updateMessageText(messageId, newMessageText);
+
+            // 4. Return the appropriate response based on the ValidationResult.
+            if (validationResult.isValid()) {
+                // Successfully updated the message. Return the updated message as the response.
+                Message updatedMessage = messageService.getMessageById(messageId);
+                ctx.status(200).json(updatedMessage);
             } else {
-                // Failed to delete the message, return an error response (e.g., 404 Not Found)
-                ctx.status(404).result("Message not found");
+                String errorMessage = validationResult.getMessage();
+                if (errorMessage.equals("Message text cannot be blank") ||
+                        errorMessage.equals("Message text exceeds 254 characters") ||
+                        errorMessage.equals("Message not found")) {
+                    ctx.status(400).result(""); // Respond with 400 status and an empty body.
+                } else {
+                    ctx.status(500).result("Failed to update the message"); // Generic error response.
+                }
             }
         });
 

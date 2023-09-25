@@ -69,6 +69,25 @@ public class MessageService {
         return ValidationResult.valid();
     }
 
+    public ValidationResult updateMessageText(int messageId, String newText) {
+        // Validate the new text
+        if (isNullOrBlank(newText)) {
+            return ValidationResult.error("Message text cannot be blank");
+        } else if (newText.length() > 254) {
+            return ValidationResult.error("Message text exceeds 254 characters");
+        } else if (messageDAO.getMessageById(messageId) == null) {
+            return ValidationResult.error("Message not found");
+        }
+
+        // Update the message text
+        boolean wasUpdated = messageDAO.updateMessageText(messageId, newText);
+        if (wasUpdated) {
+            return ValidationResult.success("Message updated successfully");
+        } else {
+            return ValidationResult.error("Failed to update the message");
+        }
+    }
+
     private boolean isNullOrBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
