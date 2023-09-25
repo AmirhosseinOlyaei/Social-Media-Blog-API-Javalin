@@ -40,16 +40,17 @@ public class MessageDAOImpl implements MessageDAO {
     @Override
     public List<Message> getAllMessages() {
         List<Message> messages = new ArrayList<>();
-        try (Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(GET_ALL_MESSAGES)) {
-
+        try (PreparedStatement pstmt = connection.prepareStatement(GET_ALL_MESSAGES);
+                ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 Message message = extractMessageFromResultSet(rs);
                 messages.add(message);
             }
-
-        } catch (Exception e) {
+        } catch (SQLException e) {
             handleError(e);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
         return messages;
     }
