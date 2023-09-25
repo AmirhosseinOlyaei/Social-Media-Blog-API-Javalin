@@ -151,16 +151,15 @@ public class SocialMediaController {
             return;
         }
 
-        // Check if the password is valid.
+        // Get the stored account details from the database based on the username.
         Account existingAccount = accountService.getAccountByUsername(inputAccount.getUsername());
-        if (existingAccount == null || !existingAccount.getPassword().equals(inputAccount.getPassword())) {
-            // Return a 401 Unauthorized response.
-            ctx.status(401).json(mapResponse(""));
-            return;
-        }
 
-        // Authenticate the user.
-        authenticate(ctx, inputAccount);
+        // Check if the username exists and if the provided password matches.
+        if (existingAccount == null || !existingAccount.getPassword().equals(inputAccount.getPassword())) {
+            ctx.status(401).result(""); // Unauthorized
+        } else {
+            ctx.status(200).json(existingAccount); // Successfully authenticated
+        }
     }
 
     private void authenticate(Context ctx, Account inputAccount) {
