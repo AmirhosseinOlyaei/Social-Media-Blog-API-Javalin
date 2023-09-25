@@ -75,7 +75,7 @@ public class SocialMediaController {
         int id = Integer.parseInt(ctx.pathParam("id"));
         Message message = messageService.getMessageById(id);
         if (message == null) {
-            sendErrorResponse(ctx, 404, "Message not found", String.format("Message with ID %d not found", id));
+            ctx.status(200).result(""); // Return a 200 status and an empty response
         } else {
             ctx.json(message);
         }
