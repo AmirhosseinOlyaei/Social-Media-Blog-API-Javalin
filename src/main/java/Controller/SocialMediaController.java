@@ -95,7 +95,7 @@ public class SocialMediaController {
         int id = Integer.parseInt(ctx.pathParam("id"));
         Message message = messageService.getMessageById(id);
         if (message == null) {
-            ctx.status(200).result(""); // Return a 200 status and an empty response
+            ctx.status(200).result("");
         } else {
             ctx.json(message);
         }
@@ -117,7 +117,7 @@ public class SocialMediaController {
                 if (validationResult.getMessage().equals("Message text exceeds 254 characters")
                         || validationResult.getMessage().equals("Message text cannot be blank")
                         || validationResult.getMessage().equals("User not found in the database")) {
-                    ctx.status(400).json(""); // Return an empty response body with status code 400
+                    ctx.status(400).json("");
                 } else {
                     sendValidationErrorResponse(ctx, 400, validationResult.getMessage());
                 }
@@ -153,17 +153,17 @@ public class SocialMediaController {
 
     private void validateAccount(Context ctx, Account account) {
         if (isNullOrBlank(account.getUsername())) {
-            ctx.status(400).result(""); // Respond with 400 status and empty body.
+            ctx.status(400).result("");
             throw new IllegalArgumentException("Username cannot be blank");
         }
 
         if (isNullOrBlank(account.getPassword())) {
-            ctx.status(400).result(""); // Respond with 400 status and empty body.
+            ctx.status(400).result("");
             throw new IllegalArgumentException("Password cannot be blank");
         }
 
         if (account.getPassword().length() < 4) {
-            ctx.status(400).result(""); // Respond with 400 status and empty body.
+            ctx.status(400).result("");
             throw new IllegalArgumentException("Password must be at least 4 characters long");
         }
     }

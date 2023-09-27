@@ -134,7 +134,6 @@ public class MessageDAOImpl implements MessageDAO {
             log.error("Error while deleting message by ID: " + messageId, e);
             return false; // Handle the error and return false in case of an exception.
         } finally {
-            // Ensure that the PreparedStatement is closed in the finally block
             if (pstmt != null) {
                 try {
                     pstmt.close();
