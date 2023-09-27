@@ -25,7 +25,7 @@ public class ValidationResult {
         return message;
     }
 
-    public static ValidationResult success(String string) {
-        return null;
+    public static ValidationResult success(String message) {
+        return new ValidationResult(true, message);
     }
 }
